@@ -23,15 +23,22 @@ class TankWar:
         pygame.init()   # 初始化pygame模块
         pygame.display.set_caption(Settings.GAME_NAME)  # 设置窗口标题
         pygame.mixer.init()    # 初始化音频模块
+        print("游戏开始\n进入第1关")
 
     def __create_sprite(self):
         self.hero = Hero(Settings.HERO_IMAGE_NAME, self.screen)
 
         self.enemies = pygame.sprite.Group()
-        for _ in range(Settings.ENEMY_COUNT):
+        # 根据关卡调整敌人数量和速度
+        enemy_count = Settings.ENEMY_COUNT + self.current_level  # 每过一关，敌人数量增加当前关卡的数量
+        enemy_speed_base = Settings.ENEMY_SPEED
+        enemy_speed = enemy_speed_base + (self.current_level - 1) * 0.7  # 每过一关，敌人速度增加0.7
+        
+        for _ in range(enemy_count):
             direction = random.randint(0, 3)
             enemy = Enemy(Settings.ENEMY_IMAGES[direction], self.screen)
             enemy.direction = direction
+            enemy.speed = enemy_speed  # 设置当前关卡的敌人速度
             self.enemies.add(enemy)
             
         self.enemy_bullets = pygame.sprite.Group()
@@ -41,13 +48,16 @@ class TankWar:
 
     def __next_level(self):
         """处理进入下一关的逻辑"""
-        print(f"进入第{self.current_level + 1}关")
         self.current_level += 1
+        if self.current_level == 4:
+            print("VICTORY")
+            self.__game_over()
+        print(f"进入第{self.current_level}关")
         self.hero.rect.centerx = Settings.SCREEN_RECT.centerx - Settings.BOX_RECT.width * 2  # 更新玩家位置
         self.hero.rect.bottom = Settings.SCREEN_RECT.bottom
         self.enemies.empty()  # 清空敌人
         self.enemy_bullets.empty()  # 清空敌方子弹
-        self.__create_sprite()  # 重新生成地图和敌人（需确保__create_sprite能处理不同关卡）
+        self.__create_sprite()  # 重新生成地图和敌人
 
     def __draw_map(self):
         """
@@ -88,9 +98,29 @@ class TankWar:
                         wall.type = Settings.IRON_WALL
                     elif Settings.MAP_TWO[y][x] == Settings.WEED_WALL:
                         wall.type = Settings.WEED_WALL
-                    elif Settings.MAP_ONE[y][x] == Settings.SEA_WALL:
+                    elif Settings.MAP_TWO[y][x] == Settings.SEA_WALL:
                         wall.type = Settings.SEA_WALL
                     elif Settings.MAP_TWO[y][x] == Settings.BOSS_WALL:
+                        wall.type = Settings.BOSS_WALL
+                        wall.life = 1
+                    self.walls.add(wall)
+        elif self.current_level == 3:
+            for y in range(len(Settings.MAP_THREE)):
+                for x in range(len(Settings.MAP_THREE[y])):
+                    if Settings.MAP_ONE[y][x] == 0:
+                        continue
+                    wall = Wall(Settings.WALLS[Settings.MAP_THREE[y][x]], self.screen)
+                    wall.rect.x = x*Settings.BOX_SIZE
+                    wall.rect.y = y*Settings.BOX_SIZE
+                    if Settings.MAP_THREE[y][x] == Settings.RED_WALL:
+                        wall.type = Settings.RED_WALL
+                    elif Settings.MAP_THREE[y][x] == Settings.IRON_WALL:
+                        wall.type = Settings.IRON_WALL
+                    elif Settings.MAP_THREE[y][x] == Settings.WEED_WALL:
+                        wall.type = Settings.WEED_WALL
+                    elif Settings.MAP_THREE[y][x] == Settings.SEA_WALL:
+                        wall.type = Settings.SEA_WALL
+                    elif Settings.MAP_THREE[y][x] == Settings.BOSS_WALL:
                         wall.type = Settings.BOSS_WALL
                         wall.life = 1
                     self.walls.add(wall)
@@ -239,6 +269,6 @@ class TankWar:
 
     @staticmethod
     def __game_over():
-        print("游戏结束")
+        print("DEFEAT")
         pygame.quit()
         exit()
